@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그림 일기</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #000;
+            touch-action: none; /* 터치 스크린에서 스크롤 방지 */
+        }
+        .tools {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>그림 일기</h1>
+    <input type="date" id="datePicker">
+    <label>캔버스 크기: 
+        너비 <input type="number" id="canvasWidth" value="320" min="100">
+        높이 <input type="number" id="canvasHeight" value="240" min="100">
+        <button id="resizeCanvas">크기 조절</button>
+    </label>
+    <canvas id="drawingCanvas" width="320" height="240"></canvas>
+    
+    <div class="tools">
+        <label>색상: <input type="color" id="colorPicker" value="#000000"></label>
+        <label>브러시 크기:
+            <select id="brushSize">
+                <option value="2">작은</option>
+                <option value="5">중간</option>
+                <option value="10">큰</option>
+            </select>
+        </label>
+        <button id="brush">브러시</button>
+        <button id="eraser">지우개</button>
+        <button id="save">저장</button>
+        <button id="load">불러오기</button>
+        <button id="clearCanvas">초기화</button> <!-- 그림 초기화 버튼 추가 -->
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let brushSize = 2;
+        let color = '#000000';
+        let isEraser = false;
+
+        function startDrawing(e) {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineWidth = brushSize;
+            ctx.strokeStyle = isEraser ? '#FFFFFF' : color; // 지우개 모드일 때 흰색으로 설정
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            drawing = false;
+            ctx.closePath();
+        }
+
+        function changeColor(e) {
+            if (!isEraser) {
+                color = e.target.value;
+            }
+        }
+
+        function changeBrushSize(e) {
+            brushSize = e.target.value;
+        }
+
+        function useEraser() {
+            isEraser = true;
+            document.getElementById('colorPicker').disabled = true; // 색상 선택 비활성화
+        }
+
+        function useBrush() {
+            isEraser = false;
+            document.getElementById('colorPicker').disabled = false; // 색상 선택 활성화
+        }
+
+        function saveDrawing() {
+            const date = document.getElementById('datePicker').value;
+            if (!date) {
+                alert('날짜를 선택해주세요.');
+                return;
+            }
+            const dataURL = canvas.toDataURL();
+            localStorage.setItem(`drawing_${date}`, dataURL);
+            alert('그림이 저장되었습니다!');
+        }
+
+        function loadDrawing() {
+            const date = document.getElementById('datePicker').value;
+            if (!date) {
+                alert('날짜를 선택해주세요.');
+                return;
+            }
+            const savedDrawing = localStorage.getItem(`drawing_${date}`);
+            if (savedDrawing) {
+                const img = new Image();
+                img.src = savedDrawing;
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // 기존 캔버스 지우기
+                    ctx.drawImage(img, 0, 0);
+                };
+            } else {
+                alert('저장된 그림이 없습니다.');
+            }
+        }
+
+        function resizeCanvas() {
+            const width = document.getElementById('canvasWidth').value;
+            const height = document.getElementById('canvasHeight').value;
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 초기화
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스 지우기
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        document.getElementById('colorPicker').addEventListener('input', changeColor);
+        document.getElementById('brushSize').addEventListener('change', changeBrushSize);
+        document.getElementById('eraser').addEventListener('click', useEraser);
+        document.getElementById('brush').addEventListener('click', useBrush);
+        document.getElementById('save').addEventListener('click', saveDrawing);
+        document.getElementById('load').addEventListener('click', loadDrawing);
+        document.getElementById('resizeCanvas').addEventListener('click', resizeCanvas);
+        document.getElementById('clearCanvas').addEventListener('click', clearCanvas); // 초기화 버튼 이벤트 추가
+    </script>
+</body>
+</html>
